@@ -79,7 +79,31 @@ CDC Flu --- December 18, 2023
 
 
 
-## Slides begin
+## Goal
+
+#### Use reported cases to estimate actual infections 
+
+* For every US state 
+* Between March 1, 2020 to January 1, 2022
+* Provide an "authoritative" estimate with uncertainty
+* No compartmental models, no sampling or Bayesian methods
+
+## Retrospective deconvolution
+
+* Based on prior work (Jahja et al. 2021)
+* Take reported cases and deconvolve them to find when symptoms began
+* Private CDC linelist to estimate the delay from symptom onset to case report
+  - Different delay distribution for every report date and state
+* Combine with Literature estimate of the delay from infection to symptom onset
+  - Variant specific
+  - Prevailing variant mix taken from GISAID
+* Convolve both to get delay distribution from infection to case report
+
+
+
+
+
+
 
 ## Callouts
 
