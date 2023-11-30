@@ -1,0 +1,150 @@
+---
+format: 
+  revealjs:
+    footer: "Title --- [cmu-delphi.github.io/repo-name]{.smaller}"
+    logo: "gfx/delphi.jpg"
+    embed-resources: true
+    width: 1280
+    height: 720
+    theme: [default, themer.scss]
+    fig-format: svg
+execute: 
+  cache: true
+editor: source
+---
+
+```{r}
+#| fig-align: center
+#| fig-format: svg
+primary <- "#a8201a"
+secondary <- "#f9c80e"
+tertiary <- "#2a76dd"
+fourth_colour <- "#311847"
+library(epiprocess)
+suppressMessages(library(tidyverse))
+x <- archive_cases_dv_subset
+x_latest <- epix_as_of(x, max_version = max(x$DT$version))
+self_max = max(x$DT$version)
+versions = seq(as.Date("2020-06-01"), self_max - 1, by = "1 month")
+snapshots_all <- map_dfr(versions, function(v) { 
+  epix_as_of(x, max_version = v) %>% mutate(version = v)}) %>%
+  bind_rows(x_latest %>% mutate(version = self_max)) %>%
+  mutate(latest = version == self_max)
+snapshots <- snapshots_all %>% 
+  filter(geo_value %in% c("ca", "fl"))
+```
+
+```{r}
+#| include: false
+#| label: cover-art
+ggplot(snapshots_all %>% 
+         arrange(geo_value, version, time_value) %>% 
+         filter(!latest),
+       aes(x = time_value, y = percent_cli)) +  
+  geom_line(aes(color = factor(version), group = interaction(geo_value, version))) + 
+  #geom_vline(aes(color = factor(version), xintercept = version), lty = 3, 
+  #           size = 0.5) +
+  scale_x_date(minor_breaks = "month", labels = NULL) +
+  labs(x = "", y = "") + 
+  theme_void() +
+  coord_cartesian(xlim = as.Date(c("2020-10-01", NA)), ylim = c(-5, NA)) +
+  scale_color_viridis_d(option = "B", end = .8) +
+  theme(legend.position = "none", panel.background = element_blank()) +
+  geom_line(
+    data = snapshots %>% filter(latest),
+    aes(x = time_value, y = percent_cli, group = geo_value), 
+    inherit.aes = FALSE, color = "black")
+```
+
+
+
+:::: {.columns}
+::: {.column width="20%"}
+
+:::
+::: {.column width="80%"}
+## Title {background-image="index_files/figure-revealjs/cover-art-1.svg" background-position="bottom"}
+
+### Subtitle
+
+<br>
+
+#### Authors
+#### and CMU's Delphi Group
+
+Talk Venue --- Date
+:::
+::::
+
+## Slides begin
+
+## Callouts
+
+::: {.callout-note}
+You can use these. See <https://quarto.org/docs/authoring/callouts.html>
+:::
+
+## Final slide {.smaller}
+
+
+### Thanks:
+
+```{r qr-codes}
+#| include: false
+#| fig-format: png
+# Code to generate QR codes to link to any external sources
+qrdat <- function(text, ecl = c("L", "M", "Q", "H")) {
+  x <- qrcode::qr_code(text, ecl)
+  n <- nrow(x)
+  s <- seq_len(n)
+  tib <- tidyr::expand_grid(x = s, y = rev(s))
+  tib$z <- c(x)
+  tib
+}
+qr1 <- qrdat("https://cmu-delphi.github.io/epiprocess/")
+qr2 <- qrdat("https://cmu-delphi.github.io/epipredict/")
+ggplot(qr1, aes(x, y, fill = z)) +
+  geom_raster() +
+  ggtitle("{epiprocess}") +
+  coord_equal(expand = FALSE) +
+  scale_fill_manual(values = c("white", "black"), guide = "none") +
+  theme_void(base_size = 18) +
+  theme(plot.title = element_text(hjust = .5))
+ggplot(qr2, aes(x, y, fill = z)) +
+  geom_raster() +
+  labs(title = "{epipredict}") +
+  coord_equal(expand = FALSE) +
+  scale_fill_manual(values = c("white", "black"), guide = "none") +
+  theme_void(base_size = 18) +
+  theme(plot.title = element_text(hjust = .5))
+```
+
+:::: {.columns}
+::: {.column width="50%"}
+- The whole [CMU Delphi Team](https://delphi.cmu.edu/about/team/) (across many institutions)
+- Optum/UnitedHealthcare, Change Healthcare.
+- Google, Facebook, Amazon Web Services.
+- Quidel, SafeGraph, Qualtrics.
+- Centers for Disease Control and Prevention.
+- Council of State and Territorial Epidemiologists
+:::
+
+::: {.column width="50%"}
+
+![](gfx/qr-epiprocess.png){width="300px"}
+![](gfx/qr-epipredict.png){width="300px"}
+
+:::
+
+::::
+
+::: {layout-row=1 fig-align="center"}
+![](gfx/delphi.jpg){height="100px"}
+![](gfx/berkeley.jpg){height="100px"}
+![](gfx/cmu.jpg){height="100px"}
+![](gfx/ubc.jpg){width="250px"}
+![](gfx/usc.jpg){width="250px"}
+![](gfx/stanford.jpg){width="250px"}
+:::
+
+
