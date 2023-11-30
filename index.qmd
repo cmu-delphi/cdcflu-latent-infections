@@ -1,12 +1,13 @@
 ---
 format: 
   revealjs:
-    footer: "Title --- [cmu-delphi.github.io/repo-name]{.smaller}"
+    footer: "Latent Infections --- [cmu-delphi.github.io/cdcflu-latent-infections]{.smaller}"
     logo: "gfx/delphi.jpg"
     embed-resources: true
     width: 1280
     height: 720
     theme: [default, themer.scss]
+    css: tachyons-minimal.css
     fig-format: svg
 execute: 
   cache: true
@@ -58,23 +59,25 @@ ggplot(snapshots_all %>%
 
 
 
-:::: {.columns}
-::: {.column width="20%"}
+::: flex
+::: w-20
 
 :::
-::: {.column width="80%"}
-## Title {background-image="index_files/figure-revealjs/cover-art-1.svg" background-position="bottom"}
+::: w-80
+## Estimating latent infections {background-image="index_files/figure-revealjs/cover-art-1.svg" background-position="bottom"}
 
-### Subtitle
+### A retrospective
 
 <br>
 
-#### Authors
-#### and CMU's Delphi Group
+#### Ryan J. Tibshirani, Rachel Lobay, and Daniel J. McDonald
+#### and CMU's Delphi Group...
 
-Talk Venue --- Date
+CDC Flu --- December 18, 2023
 :::
-::::
+:::
+
+
 
 ## Slides begin
 
