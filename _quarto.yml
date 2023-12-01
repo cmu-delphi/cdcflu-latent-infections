@@ -1,0 +1,23 @@
+format: 
+  revealjs:
+    logo: "gfx/delphi.jpg"
+    embed-resources: true
+    width: 1280
+    height: 720
+    theme: [default, themer.scss]
+    css: tachyons-minimal.css
+    fig-format: svg
+    html-math-method: mathjax
+    slide-number: true
+    fig-align: center
+    scrollable: false
+    history: false
+    link-external-icon: true
+    link-external-newwindow: true
+    footer: "{{< meta talk-short-title >}} --- {{< meta repo-address >}}"
+execute: 
+  cache: true
+  echo: true
+  warning: false
+
+editor: source

@@ -1,82 +1,18 @@
 ---
-format: 
-  revealjs:
-    footer: "Latent Infections --- [cmu-delphi.github.io/cdcflu-latent-infections]{.smaller}"
-    logo: "gfx/delphi.jpg"
-    embed-resources: true
-    width: 1280
-    height: 720
-    theme: [default, themer.scss]
-    css: tachyons-minimal.css
-    fig-format: svg
-execute: 
-  cache: true
-editor: source
+talk-title: "Estimating latent infections"
+talk-short-title: "{{< meta talk-title >}}"
+talk-subtitle: "A retrospective"
+author: "Ryan J. Tibshirani"
+other-authors: "Daniel J. McDonald, Rachel Lobay, and CMU's Delphi Group"
+repo-address: "cmu-delphi.github.io/cdcflu-latent-infections"
+talk-date: "CDC Flu -- 18 December 2023"
+format: revealjs
 ---
 
-```{r}
-#| fig-align: center
-#| fig-format: svg
-primary <- "#a8201a"
-secondary <- "#f9c80e"
-tertiary <- "#2a76dd"
-fourth_colour <- "#311847"
-library(epiprocess)
-suppressMessages(library(tidyverse))
-x <- archive_cases_dv_subset
-x_latest <- epix_as_of(x, max_version = max(x$DT$version))
-self_max = max(x$DT$version)
-versions = seq(as.Date("2020-06-01"), self_max - 1, by = "1 month")
-snapshots_all <- map_dfr(versions, function(v) { 
-  epix_as_of(x, max_version = v) %>% mutate(version = v)}) %>%
-  bind_rows(x_latest %>% mutate(version = self_max)) %>%
-  mutate(latest = version == self_max)
-snapshots <- snapshots_all %>% 
-  filter(geo_value %in% c("ca", "fl"))
-```
+<!-- Set any of the above to "" to omit them -->
 
-```{r}
-#| include: false
-#| label: cover-art
-ggplot(snapshots_all %>% 
-         arrange(geo_value, version, time_value) %>% 
-         filter(!latest),
-       aes(x = time_value, y = percent_cli)) +  
-  geom_line(aes(color = factor(version), group = interaction(geo_value, version))) + 
-  #geom_vline(aes(color = factor(version), xintercept = version), lty = 3, 
-  #           size = 0.5) +
-  scale_x_date(minor_breaks = "month", labels = NULL) +
-  labs(x = "", y = "") + 
-  theme_void() +
-  coord_cartesian(xlim = as.Date(c("2020-10-01", NA)), ylim = c(-5, NA)) +
-  scale_color_viridis_d(option = "B", end = .8) +
-  theme(legend.position = "none", panel.background = element_blank()) +
-  geom_line(
-    data = snapshots %>% filter(latest),
-    aes(x = time_value, y = percent_cli, group = geo_value), 
-    inherit.aes = FALSE, color = "black")
-```
-
-
-
-::: flex
-::: w-20
-
-:::
-::: w-80
-## Estimating latent infections {background-image="index_files/figure-revealjs/cover-art-1.svg" background-position="bottom"}
-
-### A retrospective
-
-<br>
-
-#### Ryan J. Tibshirani, Rachel Lobay, and Daniel J. McDonald
-#### and CMU's Delphi Group...
-
-CDC Flu --- December 18, 2023
-:::
-:::
-
+<!-- Or adjust the formatting in _titleslide.qmd -->
+{{< include _titleslide.qmd >}}
 
 
 ## Goal
@@ -146,8 +82,8 @@ ggplot(qr2, aes(x, y, fill = z)) +
   theme(plot.title = element_text(hjust = .5))
 ```
 
-:::: {.columns}
-::: {.column width="50%"}
+::: flex
+::: w-50
 - The whole [CMU Delphi Team](https://delphi.cmu.edu/about/team/) (across many institutions)
 - Optum/UnitedHealthcare, Change Healthcare.
 - Google, Facebook, Amazon Web Services.
@@ -156,14 +92,14 @@ ggplot(qr2, aes(x, y, fill = z)) +
 - Council of State and Territorial Epidemiologists
 :::
 
-::: {.column width="50%"}
+::: w-50
 
 ![](gfx/qr-epiprocess.png){width="300px"}
 ![](gfx/qr-epipredict.png){width="300px"}
 
 :::
 
-::::
+:::
 
 ::: {layout-row=1 fig-align="center"}
 ![](gfx/delphi.jpg){height="100px"}
