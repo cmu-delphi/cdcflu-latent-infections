@@ -47,7 +47,7 @@ Need this data.
 
 ## Incubation period by state
 
-```{r}
+```{r incubation-distn}
 dates <- seq(as.Date("2020-03-01"), as.Date("2022-03-01"), by = "3 months")
 incubation <- read_rds("data/incubation_ca_ga.rds")
 incubation |>
@@ -65,7 +65,7 @@ incubation |>
 
 ## Convolved distribution -- Infection to case report
 
-```{r}
+```{r convolved-distn}
 convolved <- read_rds("data/convolved_ca_ga.rds")
 convolved |>
   filter(Date %in% dates) |>
@@ -91,7 +91,7 @@ convolved |>
 
 ## Deconvolve cases by their delay distribution
 
-```{r}
+```{r deconvolved-cases}
 deconvolved <- read_rds("data/deconvolved_ca_ga.rds")
 deconvolved |>
   rename(`Deconvolved cases` = infections, Cases = cases) |>
