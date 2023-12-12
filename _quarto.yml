@@ -15,9 +15,19 @@ format:
     link-external-icon: true
     link-external-newwindow: true
     footer: "{{< meta talk-short-title >}} --- {{< meta repo-address >}}"
+    
 execute: 
   cache: true
-  echo: true
+  echo: false
   warning: false
+  
+knitr:
+  opts_chunk:
+    message: FALSE
+    dev: "svg"
+    fig.width: 5.33
+    fig.height: 3
+    fig.align: center
+    fig.path: "gfx/"
 
 editor: source

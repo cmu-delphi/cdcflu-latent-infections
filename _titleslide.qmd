@@ -52,7 +52,7 @@ snapshots_all |>
 
 :::
 ::: w-80
-## {{< meta talk-title >}} {background-image="index_files/figure-revealjs/cover-art-1.svg" background-position="bottom"}
+## {{< meta talk-title >}} {background-image="gfx/cover-art-1.svg" background-position="bottom"}
 
 ### {{< meta talk-subtitle >}}
 

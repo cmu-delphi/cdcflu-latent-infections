@@ -35,10 +35,89 @@ format: revealjs
   - Prevailing variant mix taken from GISAID
 * Convolve both to get delay distribution from infection to case report
 
+## Empirical delay distributions
+
+need this data.
 
 
+## Variant mix
+
+Need this data.
 
 
+## Incubation period by state
+
+```{r}
+dates <- seq(as.Date("2020-03-01"), as.Date("2022-03-01"), by = "3 months")
+incubation <- read_rds("data/incubation_ca_ga.rds")
+incubation |>
+  filter(Date %in% dates) |>
+  ggplot(aes(x = delay, y = dist, color = factor(Date))) +
+  geom_line() +
+  facet_wrap(~state) +
+  theme_bw(base_size = 14) +
+  ylab("Probability") +
+  xlab("Days from infection to symptom onset") +
+  scale_color_viridis_d(name = "") +
+  scale_y_continuous(expand = expansion(c(0, .05))) +
+  scale_x_continuous(expand = expansion(c(0, .05)))
+```
+
+## Convolved distribution -- Infection to case report
+
+```{r}
+convolved <- read_rds("data/convolved_ca_ga.rds")
+convolved |>
+  filter(Date %in% dates) |>
+  ggplot(aes(x = delay, y = dist, color = factor(Date))) +
+  geom_line() +
+  facet_wrap(~state) +
+  theme_bw(base_size = 14) +
+  ylab("Probability") +
+  xlab("Days from infection to case report") +
+  scale_color_viridis_d(name = "") +
+  scale_y_continuous(expand = expansion(c(0, .05))) +
+  scale_x_continuous(expand = expansion(c(0, .05)))
+```
+
+## Cases are selectively reported to CDC
+
+* CDC linelist with both onset and report date
+* Shrink the parameters to national proportionally
+
+![](gfx/proportion_cdc_vs_jhu.png)
+
+## Some deconvolution math
+
+## Deconvolve cases by their delay distribution
+
+```{r}
+deconvolved <- read_rds("data/deconvolved_ca_ga.rds")
+deconvolved |>
+  rename(`Deconvolved cases` = infections, Cases = cases) |>
+  pivot_longer(`Deconvolved cases`:Cases) |>
+  ggplot(aes(time_value, value / 1000, color = name)) +
+  geom_line() +
+  theme_bw(base_size = 14) +
+  facet_wrap(~ geo_value, ncol = 1, scales = "free_y") +
+  scale_color_manual(name = "", values = c(primary, tertiary)) +
+  xlab("Date") + ylab("Cases / Deconvolved cases \n(thousands)") +
+  scale_y_continuous(expand = expansion(c(0, .05))) +
+  theme(
+    legend.position = c(.2, .9), 
+    legend.title = element_blank(),
+    legend.background = element_rect(fill = "transparent"),
+    legend.key = element_rect(fill = "transparent"),
+  )
+```
+
+## Estimate the inverse reporting ratio
+
+## Serology data
+
+## State space model
+
+## Results
 
 
 ## Callouts
