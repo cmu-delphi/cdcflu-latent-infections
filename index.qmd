@@ -37,18 +37,58 @@ format: revealjs
 
 ## Empirical delay distributions
 
-need this data.
+* Day / state specific, using CDC Private Linelist
+* Method of moments to fit a gamma density
+
+```{r linelist-delay}
+dates <- seq(as.Date("2020-03-01"), as.Date("2022-03-01"), by = "3 months")
+report_delay <- read_rds("data/report_delay_ca_ga.rds") |>
+  filter(Date %in% dates)
+ggplot(report_delay, aes(x = delay, y = dist, color = factor(Date))) +
+  geom_line() +
+  facet_wrap(~state) +
+  theme_bw(base_size = 14) +
+  ylab("Probability") +
+  xlab("Days from test to case report") +
+  scale_color_viridis_d(name = "") +
+  scale_y_continuous(expand = expansion(c(0, .05))) +
+  scale_x_continuous(expand = expansion(c(0, .05)))
+```
+
+## Cases are selectively reported to CDC
+
+* CDC linelist with both onset and report date
+* Shrink the parameters proportionally toward national (each day)
+
+![](gfx/proportion_cdc_vs_jhu.png)
 
 
-## Variant mix
 
-Need this data.
+## Variant mix over time - from GISAID
+
+```{r variant-mix}
+vmix <- read_rds("data/variant_mix.rds") |>
+  filter(State %in% c("CA", "GA")) |>
+  rename(Original = Other) |>
+  pivot_longer(Alpha:Original)
+ggplot(vmix, aes(Date, y = value, fill = name)) +
+  geom_area() +
+  facet_wrap(~State) +
+  theme_bw(base_size = 14) +
+  ylab("Proportion") +
+  xlab("Date") +
+  scale_fill_viridis_d(name = "") +
+  scale_y_continuous(expand = expansion()) +
+  scale_x_date(expand = expansion())
+```
 
 
-## Incubation period by state
+## Incubation period
+
+* Literature estimates for each variant
+* Distribution is by day / state specific variant mix
 
 ```{r incubation-distn}
-dates <- seq(as.Date("2020-03-01"), as.Date("2022-03-01"), by = "3 months")
 incubation <- read_rds("data/incubation_ca_ga.rds")
 incubation |>
   filter(Date %in% dates) |>
@@ -80,14 +120,20 @@ convolved |>
   scale_x_continuous(expand = expansion(c(0, .05)))
 ```
 
-## Cases are selectively reported to CDC
 
-* CDC linelist with both onset and report date
-* Shrink the parameters to national proportionally
+## From reported incident cases to incident infection onset
 
-![](gfx/proportion_cdc_vs_jhu.png)
+* Call this "deconvolved cases"
+* Move the date back using the convolved distribution
 
-## Some deconvolution math
+
+\begin{aligned}
+\minimize_{x}\ \sum_{t = 1}^n \left ( y_t -  \sum_{k = 1}^{d} \hat{p}_t(k)x_{t-k} 
+\right )^2 + \lambda \|D^{(4)}x\|_1. 
+\end{aligned}
+
+* $D^{(4)}$ is a 4th-order difference matrix.
+* Result is a smooth estimate of the deconvolved cases
 
 ## Deconvolve cases by their delay distribution
 
@@ -111,13 +157,199 @@ deconvolved |>
   )
 ```
 
-## Estimate the inverse reporting ratio
+## From deconvolved cases to circulating infections
+
+* Use serology to estimate the proportion of infections that are reported
+* "Leaky immunity" model
+
+\begin{aligned}
+s_t = (1-\gamma)s_{t-1} + a_t (C_t - C_{t-1}) z_t + \epsilon_t
+\end{aligned}
+
+* $s_t$ is population immunity
+* $\gamma$ is percentage that loses immunity between $(t-1)$ and $t$
+* $a_t$ is the inverse reporting ratio
+* $C_t$ is cumulative (deconvolved) cases at time $t$
+* $z_t$ is estimated fraction of cases that are first infections (from Literature)
+* $\epsilon_t$ is Gaussian noise.
+
+
 
 ## Serology data
 
+* Two sources, noisy realizations of $s_t$
+* Lots of missingness
+
+
+
+
 ## State space model
 
-## Results
+\begin{aligned}
+s_t = (1-\gamma)s_{t-1} + a_t (C_t - C_{t-1}) z_t + \epsilon_t
+\end{aligned}
+
+* Treat $s_t$ as latent
+* Estimate $\gamma$ and $a_t$ and noise variances using a state space model
+* Use Kalman filter / smoother, maximize the likelihood
+* Handles missingness automatically
+* Imposes smoothness on $a_t$ (like a spline)
+* Also gives variance estimates for $a_t$
+
+## Estimated seroprevalence and leaky model parameters
+
+
+## Estimated inverse reporting ratios
+
+```{r inverse-reporting-ratios}
+inverse_reporting <- read_rds("data/inverse_reporting_ratios.rds")
+inverse_reporting <- inverse_reporting |>
+  map(~ tibble(Date = as.Date(.x$date), at = .x$alpha, var_at = .x$vhat)) |>
+  bind_rows(.id = "geo_value") |>
+  filter(geo_value %in% c("CA", "GA"))
+ggplot(inverse_reporting, aes(Date, at)) +
+  geom_hline(yintercept = 1) +
+  geom_ribbon(aes(
+    ymin = pmax(at - qnorm(.95) * sqrt(var_at), 1), 
+    ymax = pmax(at + qnorm(.95) * sqrt(var_at), 1)), 
+    fill = tertiary, alpha = .2
+  ) +
+  geom_ribbon(aes(
+    ymin = pmax(at - qnorm(.9) * sqrt(var_at), 1), 
+    ymax = pmax(at + qnorm(.9) * sqrt(var_at), 1)), 
+    fill = tertiary, alpha = .3
+  ) +
+  geom_ribbon(aes(
+    ymin = pmax(at - qnorm(.75) * sqrt(var_at), 1), 
+    ymax = pmax(at + qnorm(.75) * sqrt(var_at), 1)),
+    fill = tertiary, alpha = .5
+  ) +
+  geom_line(color = primary) +
+  facet_wrap(~ geo_value, ncol = 1, scales = "free_y") +
+  theme_bw(base_size = 14) +
+  scale_y_continuous(limits = c(1, NA), expand = expansion(c(0, .05))) +
+  scale_x_date(expand = expansion()) +
+  geom_vline(xintercept = as.Date("2021-12-01"), linetype = "dashed") +
+  xlab("Date") + ylab("Estimated inverse \nreporting ratio")
+```
+
+
+## Estimated latent infections
+
+```{r latent-infections}
+latent_infections <- as_tibble(read_rds("data/latent_infections.rds")) |>
+  select(date:adj_infect_var, unadj_inf_rate, cases_rate_7d_av) |>
+  left_join(epipredict::state_census |> select(pop, abbr) |> 
+              mutate(abbr = toupper(abbr)), by = c("geo_value" = "abbr")) |>
+  mutate(adj_infect_rate = adj_infect / pop * 1e5,
+         adj_infect_rate_sd = sqrt(adj_infect_var) / pop * 1e5 ) |>
+  select(date, geo_value, infections = adj_infect_rate, 
+         infections_sd = adj_infect_rate_sd, 
+         deconv_cases = unadj_inf_rate, 
+         cases = cases_rate_7d_av) 
+
+latent_infections |>
+  filter(geo_value %in% c("CA", "GA")) |>
+  ggplot(aes(date)) +
+  geom_ribbon(aes(
+    ymin = pmax(infections - qnorm(.95) * infections_sd, cases), 
+    ymax = pmax(infections + qnorm(.95) * infections_sd, cases)), 
+    fill = tertiary, alpha = .2
+  ) +
+  geom_ribbon(aes(
+    ymin = pmax(infections - qnorm(.9) * infections_sd, cases), 
+    ymax = pmax(infections + qnorm(.9) * infections_sd, cases)), 
+    fill = tertiary, alpha = .3
+  ) +
+  geom_ribbon(aes(
+    ymin = pmax(infections - qnorm(.75) * infections_sd, cases), 
+    ymax = pmax(infections + qnorm(.75) * infections_sd, cases)), 
+    fill = tertiary, alpha = .5
+  ) +
+  geom_line(aes(y = infections, color = "Infections")) +
+  geom_line(aes(y = deconv_cases, color = "Deconvolved cases")) +
+  geom_line(aes(y = cases, color = "Cases")) +
+  facet_wrap(~ geo_value, ncol = 1, scales = "free_y") +
+  theme_bw(base_size = 14) +
+  scale_x_date(expand = expansion()) + 
+  scale_color_manual(name = "", values = c(
+    Cases = primary, 
+    `Deconvolved cases` = secondary, 
+    Infections = tertiary
+  )) +
+  geom_vline(xintercept = as.Date("2021-12-01"), linetype = "dashed") +
+  xlab("Date") + ylab("Estimated latent infections\n (per 100K people)")
+```
+
+## Pre-omicron
+
+```{r latent-infects-pre-omicron}
+latent_infections |>
+  filter(geo_value %in% c("CA", "GA"), date <= "2021-12-01") |>
+  ggplot(aes(date)) +
+  geom_ribbon(aes(
+    ymin = pmax(infections - qnorm(.95) * infections_sd, cases), 
+    ymax = pmax(infections + qnorm(.95) * infections_sd, cases)), 
+    fill = tertiary, alpha = .2
+  ) +
+  geom_ribbon(aes(
+    ymin = pmax(infections - qnorm(.9) * infections_sd, cases), 
+    ymax = pmax(infections + qnorm(.9) * infections_sd, cases)), 
+    fill = tertiary, alpha = .3
+  ) +
+  geom_ribbon(aes(
+    ymin = pmax(infections - qnorm(.75) * infections_sd, cases), 
+    ymax = pmax(infections + qnorm(.75) * infections_sd, cases)), 
+    fill = tertiary, alpha = .5
+  ) +
+  geom_line(aes(y = infections, color = "Infections")) +
+  geom_line(aes(y = deconv_cases, color = "Deconvolved cases")) +
+  geom_line(aes(y = cases, color = "Cases")) +
+  facet_wrap(~ geo_value, ncol = 1, scales = "free_y") +
+  theme_bw(base_size = 14) +
+  scale_x_date(expand = expansion()) + 
+  scale_color_manual(name = "", values = c(
+    Cases = primary, 
+    `Deconvolved cases` = secondary, 
+    Infections = tertiary
+  )) +
+  xlab("Date") + ylab("Estimated latent infections\n (per 100K people)")
+```
+
+## Omicron (more uncertain, due to serology)
+
+```{r latent-infects-omicron}
+latent_infections |>
+  filter(geo_value %in% c("CA", "GA"), date >= "2021-12-01") |>
+  ggplot(aes(date)) +
+  geom_ribbon(aes(
+    ymin = pmax(infections - qnorm(.95) * infections_sd, cases), 
+    ymax = pmax(infections + qnorm(.95) * infections_sd, cases)), 
+    fill = tertiary, alpha = .2
+  ) +
+  geom_ribbon(aes(
+    ymin = pmax(infections - qnorm(.9) * infections_sd, cases), 
+    ymax = pmax(infections + qnorm(.9) * infections_sd, cases)), 
+    fill = tertiary, alpha = .3
+  ) +
+  geom_ribbon(aes(
+    ymin = pmax(infections - qnorm(.75) * infections_sd, cases), 
+    ymax = pmax(infections + qnorm(.75) * infections_sd, cases)), 
+    fill = tertiary, alpha = .5
+  ) +
+  geom_line(aes(y = infections, color = "Infections")) +
+  geom_line(aes(y = deconv_cases, color = "Deconvolved cases")) +
+  geom_line(aes(y = cases, color = "Cases")) +
+  facet_wrap(~ geo_value, ncol = 1, scales = "free_y") +
+  theme_bw(base_size = 14) +
+  scale_x_date(expand = expansion(), date_breaks = "1 month", date_labels = "%b") + 
+  scale_color_manual(name = "", values = c(
+    Cases = primary, 
+    `Deconvolved cases` = secondary, 
+    Infections = tertiary
+  )) +
+  xlab("Date") + ylab("Estimated latent infections\n (per 100K people)")
+```
 
 
 ## Callouts
