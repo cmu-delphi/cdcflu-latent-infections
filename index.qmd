@@ -41,6 +41,7 @@ format: revealjs
 * Method of moments to fit a gamma density
 
 ```{r linelist-delay}
+#| fig-width: 8
 dates <- seq(as.Date("2020-03-01"), as.Date("2022-03-01"), by = "3 months")
 report_delay <- read_rds("data/report_delay_ca_ga.rds") |>
   filter(Date %in% dates)
@@ -50,7 +51,7 @@ ggplot(report_delay, aes(x = delay, y = dist, color = factor(Date))) +
   theme_bw(base_size = 14) +
   ylab("Probability") +
   xlab("Days from test to case report") +
-  scale_color_viridis_d(name = "") +
+  scale_color_viridis_d(name = "", option = "B", end = .9, begin = .1) +
   scale_y_continuous(expand = expansion(c(0, .05))) +
   scale_x_continuous(expand = expansion(c(0, .05)))
 ```
@@ -60,13 +61,17 @@ ggplot(report_delay, aes(x = delay, y = dist, color = factor(Date))) +
 * CDC linelist with both onset and report date
 * Shrink the parameters proportionally toward national (each day)
 
-![](gfx/proportion_cdc_vs_jhu.png)
-
+```{r cdc-vs-jhu}
+# data restricted, only have the figure
+knitr::include_graphics("gfx/proportion_cdc_vs_jhu.png")
+```
 
 
 ## Variant mix over time - from GISAID
 
 ```{r variant-mix}
+#| fig-width: 8
+#| fig-height: 4
 vmix <- read_rds("data/variant_mix.rds") |>
   filter(State %in% c("CA", "GA")) |>
   rename(Original = Other) |>
@@ -77,7 +82,7 @@ ggplot(vmix, aes(Date, y = value, fill = name)) +
   theme_bw(base_size = 14) +
   ylab("Proportion") +
   xlab("Date") +
-  scale_fill_viridis_d(name = "") +
+  scale_fill_viridis_d(name = "", option = "B", end = .9, begin = .1) +
   scale_y_continuous(expand = expansion()) +
   scale_x_date(expand = expansion())
 ```
@@ -89,6 +94,8 @@ ggplot(vmix, aes(Date, y = value, fill = name)) +
 * Distribution is by day / state specific variant mix
 
 ```{r incubation-distn}
+#| fig-width: 8
+#| fig-height: 4
 incubation <- read_rds("data/incubation_ca_ga.rds")
 incubation |>
   filter(Date %in% dates) |>
@@ -98,7 +105,7 @@ incubation |>
   theme_bw(base_size = 14) +
   ylab("Probability") +
   xlab("Days from infection to symptom onset") +
-  scale_color_viridis_d(name = "") +
+  scale_color_viridis_d(name = "", option = "B", end = .9, begin = .1) +
   scale_y_continuous(expand = expansion(c(0, .05))) +
   scale_x_continuous(expand = expansion(c(0, .05)))
 ```
@@ -106,6 +113,8 @@ incubation |>
 ## Convolved distribution -- Infection to case report
 
 ```{r convolved-distn}
+#| fig-width: 8
+#| fig-height: 4
 convolved <- read_rds("data/convolved_ca_ga.rds")
 convolved |>
   filter(Date %in% dates) |>
@@ -115,13 +124,13 @@ convolved |>
   theme_bw(base_size = 14) +
   ylab("Probability") +
   xlab("Days from infection to case report") +
-  scale_color_viridis_d(name = "") +
+  scale_color_viridis_d(name = "", option = "B", end = .9, begin = .1) +
   scale_y_continuous(expand = expansion(c(0, .05))) +
   scale_x_continuous(expand = expansion(c(0, .05)))
 ```
 
 
-## From reported incident cases to incident infection onset
+## From incident cases to incident infection onset
 
 * Call this "deconvolved cases"
 * Move the date back using the convolved distribution
@@ -138,6 +147,8 @@ convolved |>
 ## Deconvolve cases by their delay distribution
 
 ```{r deconvolved-cases}
+#| fig-width: 8
+#| fig-height: 4
 deconvolved <- read_rds("data/deconvolved_ca_ga.rds")
 deconvolved |>
   rename(`Deconvolved cases` = infections, Cases = cases) |>
@@ -180,6 +191,26 @@ s_t = (1-\gamma)s_{t-1} + a_t (C_t - C_{t-1}) z_t + \epsilon_t
 * Two sources, noisy realizations of $s_t$
 * Lots of missingness
 
+```{r serology}
+#| fig-width: 8
+serology <- read_rds("data/serology.rds") |>
+  filter(geo_value %in% c("CA", "GA")) |>
+  mutate(Source = case_when(
+    Source == "Blood_Donor" ~ "Blood Donor",
+    TRUE ~ "Comercial"
+  ))
+serology |>
+  ggplot(aes(Date, color = factor(Source))) +
+  geom_point(aes(y = Rate)) +
+  geom_errorbar(aes(ymin = lb, ymax = ub)) +
+  facet_wrap(~ geo_value) +
+  theme_bw(base_size = 14) +
+  ylab("Seroprevalence") +
+  xlab("Date") +
+  scale_color_manual(name = "", values = c(primary, secondary)) +
+  scale_y_continuous(expand = expansion()) +
+  scale_x_date(date_breaks = "1 year", date_labels = "%Y")
+```
 
 
 
@@ -198,10 +229,15 @@ s_t = (1-\gamma)s_{t-1} + a_t (C_t - C_{t-1}) z_t + \epsilon_t
 
 ## Estimated seroprevalence and leaky model parameters
 
+* $\gamma$ estimated to be 0.8% per week
+
+
 
 ## Estimated inverse reporting ratios
 
 ```{r inverse-reporting-ratios}
+#| fig-width: 8
+#| fig-height: 4
 inverse_reporting <- read_rds("data/inverse_reporting_ratios.rds")
 inverse_reporting <- inverse_reporting |>
   map(~ tibble(Date = as.Date(.x$date), at = .x$alpha, var_at = .x$vhat)) |>
@@ -237,6 +273,8 @@ ggplot(inverse_reporting, aes(Date, at)) +
 ## Estimated latent infections
 
 ```{r latent-infections}
+#| fig-width: 8
+#| fig-height: 4
 latent_infections <- as_tibble(read_rds("data/latent_infections.rds")) |>
   select(date:adj_infect_var, unadj_inf_rate, cases_rate_7d_av) |>
   left_join(epipredict::state_census |> select(pop, abbr) |> 
@@ -252,18 +290,18 @@ latent_infections |>
   filter(geo_value %in% c("CA", "GA")) |>
   ggplot(aes(date)) +
   geom_ribbon(aes(
-    ymin = pmax(infections - qnorm(.95) * infections_sd, cases), 
-    ymax = pmax(infections + qnorm(.95) * infections_sd, cases)), 
+    ymin = pmax(infections - qnorm(.95) * infections_sd, deconv_cases), 
+    ymax = pmax(infections + qnorm(.95) * infections_sd, deconv_cases)), 
     fill = tertiary, alpha = .2
   ) +
   geom_ribbon(aes(
-    ymin = pmax(infections - qnorm(.9) * infections_sd, cases), 
-    ymax = pmax(infections + qnorm(.9) * infections_sd, cases)), 
+    ymin = pmax(infections - qnorm(.9) * infections_sd, deconv_cases), 
+    ymax = pmax(infections + qnorm(.9) * infections_sd, deconv_cases)), 
     fill = tertiary, alpha = .3
   ) +
   geom_ribbon(aes(
-    ymin = pmax(infections - qnorm(.75) * infections_sd, cases), 
-    ymax = pmax(infections + qnorm(.75) * infections_sd, cases)), 
+    ymin = pmax(infections - qnorm(.75) * infections_sd, deconv_cases), 
+    ymax = pmax(infections + qnorm(.75) * infections_sd, deconv_cases)), 
     fill = tertiary, alpha = .5
   ) +
   geom_line(aes(y = infections, color = "Infections")) +
@@ -284,22 +322,24 @@ latent_infections |>
 ## Pre-omicron
 
 ```{r latent-infects-pre-omicron}
+#| fig-width: 8
+#| fig-height: 4
 latent_infections |>
   filter(geo_value %in% c("CA", "GA"), date <= "2021-12-01") |>
   ggplot(aes(date)) +
   geom_ribbon(aes(
-    ymin = pmax(infections - qnorm(.95) * infections_sd, cases), 
-    ymax = pmax(infections + qnorm(.95) * infections_sd, cases)), 
+    ymin = pmax(infections - qnorm(.95) * infections_sd, deconv_cases), 
+    ymax = pmax(infections + qnorm(.95) * infections_sd, deconv_cases)), 
     fill = tertiary, alpha = .2
   ) +
   geom_ribbon(aes(
-    ymin = pmax(infections - qnorm(.9) * infections_sd, cases), 
-    ymax = pmax(infections + qnorm(.9) * infections_sd, cases)), 
+    ymin = pmax(infections - qnorm(.9) * infections_sd, deconv_cases), 
+    ymax = pmax(infections + qnorm(.9) * infections_sd, deconv_cases)), 
     fill = tertiary, alpha = .3
   ) +
   geom_ribbon(aes(
-    ymin = pmax(infections - qnorm(.75) * infections_sd, cases), 
-    ymax = pmax(infections + qnorm(.75) * infections_sd, cases)), 
+    ymin = pmax(infections - qnorm(.75) * infections_sd, deconv_cases), 
+    ymax = pmax(infections + qnorm(.75) * infections_sd, deconv_cases)), 
     fill = tertiary, alpha = .5
   ) +
   geom_line(aes(y = infections, color = "Infections")) +
@@ -319,22 +359,24 @@ latent_infections |>
 ## Omicron (more uncertain, due to serology)
 
 ```{r latent-infects-omicron}
+#| fig-width: 8
+#| fig-height: 4
 latent_infections |>
   filter(geo_value %in% c("CA", "GA"), date >= "2021-12-01") |>
   ggplot(aes(date)) +
   geom_ribbon(aes(
-    ymin = pmax(infections - qnorm(.95) * infections_sd, cases), 
-    ymax = pmax(infections + qnorm(.95) * infections_sd, cases)), 
+    ymin = pmax(infections - qnorm(.95) * infections_sd, deconv_cases), 
+    ymax = pmax(infections + qnorm(.95) * infections_sd, deconv_cases)), 
     fill = tertiary, alpha = .2
   ) +
   geom_ribbon(aes(
-    ymin = pmax(infections - qnorm(.9) * infections_sd, cases), 
-    ymax = pmax(infections + qnorm(.9) * infections_sd, cases)), 
+    ymin = pmax(infections - qnorm(.9) * infections_sd, deconv_cases), 
+    ymax = pmax(infections + qnorm(.9) * infections_sd, deconv_cases)), 
     fill = tertiary, alpha = .3
   ) +
   geom_ribbon(aes(
-    ymin = pmax(infections - qnorm(.75) * infections_sd, cases), 
-    ymax = pmax(infections + qnorm(.75) * infections_sd, cases)), 
+    ymin = pmax(infections - qnorm(.75) * infections_sd, deconv_cases), 
+    ymax = pmax(infections + qnorm(.75) * infections_sd, deconv_cases)), 
     fill = tertiary, alpha = .5
   ) +
   geom_line(aes(y = infections, color = "Infections")) +
