@@ -231,6 +231,31 @@ s_t = (1-\gamma)s_{t-1} + a_t (C_t - C_{t-1}) z_t + \epsilon_t
 
 * $\gamma$ estimated to be 0.8% per week
 
+```{r serology-estimates}
+#| fig-width: 8
+latent_sero <- read_rds("data/latent_serology.rds") |>
+  filter(state %in% c("CA", "GA")) |>
+  rename(geo_value = state)
+
+serology |>
+  ggplot(aes(Date)) +
+  geom_ribbon(data = latent_sero, aes(
+    ymin = sero_weekly + 2 * sqrt(var_sero_weekly), 
+    ymax = sero_weekly - 2 * sqrt(var_sero_weekly)), 
+    fill = "black",
+    alpha = .2
+  ) +
+  geom_point(aes(y = Rate, color = factor(Source))) +
+  geom_errorbar(aes(ymin = lb, ymax = ub, color = factor(Source))) +
+  geom_line(data = latent_sero, aes(y = sero_weekly), color = "black") +
+  facet_wrap(~ geo_value) +
+  theme_bw(base_size = 14) +
+  ylab("Seroprevalence") +
+  xlab("Date") +
+  scale_color_manual(name = "", values = c(primary, secondary)) +
+  scale_y_continuous(expand = expansion()) +
+  scale_x_date(date_breaks = "1 year", date_labels = "%Y")
+```
 
 
 ## Estimated inverse reporting ratios
