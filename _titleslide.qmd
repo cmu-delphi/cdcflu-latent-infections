@@ -1,6 +1,8 @@
 ---
 ---
 
+\DeclareMathOperator*{\minimize}{minimize}
+
 ```{r setup}
 #| include: false
 primary <- "#a8201a"

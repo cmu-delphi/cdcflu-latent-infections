@@ -7,6 +7,33 @@ pickle <- import("pickle")
 states <- c("CA", "GA")
 
 
+# Linelist delays ---------------------------------------------------------
+
+linelist <- lapply(states, function(state) {
+  state_file <- paste0(
+    "LI_Dec_pres_plot_gen/Pycharm/data/", state, 
+    "_Empshrink_delay_distribution_d60c_nov5_1.25.p")
+  st_list <- pickle$load(bi$open(state_file, "rb"))
+  df <- map(st_list, function(st) {
+    tibble(
+      state = state,
+      dist = unname(unlist(st)),
+      delay = 0:(length(st) - 1)
+    )})
+  names(df) <- names(st_list)
+  bind_rows(df, .id = "Date") |>
+    mutate(Date = as.Date(Date))
+})
+
+report_delay <- bind_rows(linelist)
+write_rds(report_delay, "data/report_delay_ca_ga.rds")
+
+
+# variant mix -------------------------------------------------------------
+
+vmix <- read_csv("LI_Dec_pres_plot_gen/R/data/seq_df_post_decon_nov5.csv")
+write_rds(vmix, "data/variant_mix.rds")
+
 # Incubation period by state ----------------------------------------------
 
 incubation <- lapply(states, function(state) {
