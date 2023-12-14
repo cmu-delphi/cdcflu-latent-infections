@@ -242,12 +242,12 @@ serology |>
   geom_ribbon(data = latent_sero, aes(
     ymin = sero_weekly + 2 * sqrt(var_sero_weekly), 
     ymax = sero_weekly - 2 * sqrt(var_sero_weekly)), 
-    fill = "black",
+    fill = tertiary,
     alpha = .2
   ) +
   geom_point(aes(y = Rate, color = factor(Source))) +
   geom_errorbar(aes(ymin = lb, ymax = ub, color = factor(Source))) +
-  geom_line(data = latent_sero, aes(y = sero_weekly), color = "black") +
+  geom_line(data = latent_sero, aes(y = sero_weekly), color = tertiary) +
   facet_wrap(~ geo_value) +
   theme_bw(base_size = 14) +
   ylab("Seroprevalence") +
