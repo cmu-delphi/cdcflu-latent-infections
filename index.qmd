@@ -50,7 +50,7 @@ ggplot(report_delay, aes(x = delay, y = dist, color = factor(Date))) +
   facet_wrap(~state) +
   theme_bw(base_size = 14) +
   ylab("Probability") +
-  xlab("Days from test to case report") +
+  xlab("Days from symptom onset to case report") +
   scale_color_viridis_d(name = "", option = "B", end = .9, begin = .1) +
   scale_y_continuous(expand = expansion(c(0, .05))) +
   scale_x_continuous(expand = expansion(c(0, .05)))
@@ -110,7 +110,7 @@ incubation |>
   scale_x_continuous(expand = expansion(c(0, .05)))
 ```
 
-## Convolved distribution -- Infection to case report
+## Total delay distribution -- Infection to case report
 
 ```{r convolved-distn}
 #| fig-width: 8
@@ -132,7 +132,6 @@ convolved |>
 
 ## From incident cases to incident infection onset
 
-* Call this "deconvolved cases"
 * Move the date back using the convolved distribution
 
 
@@ -142,7 +141,7 @@ convolved |>
 \end{aligned}
 
 * $D^{(4)}$ is a 4th-order difference matrix.
-* Result is a smooth estimate of the deconvolved cases
+* Result is a smooth estimate of the "deconvolved cases"
 
 ## Deconvolve cases by their delay distribution
 
@@ -151,6 +150,7 @@ convolved |>
 #| fig-height: 4
 deconvolved <- read_rds("data/deconvolved_ca_ga.rds")
 deconvolved |>
+  filter(time_value <= "2022-03-01") |>
   rename(`Deconvolved cases` = infections, Cases = cases) |>
   pivot_longer(`Deconvolved cases`:Cases) |>
   ggplot(aes(time_value, value / 1000, color = name)) +
