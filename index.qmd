@@ -141,7 +141,7 @@ convolved |>
 \end{aligned}
 
 * $D^{(4)}$ is a 4th-order difference matrix.
-* Result is a smooth estimate of the "deconvolved cases"
+* Result is a smooth estimate of the "deconvolved cases": $C_t$
 
 ## Deconvolve cases by their delay distribution
 
@@ -170,25 +170,24 @@ deconvolved |>
 
 ## From deconvolved cases to circulating infections
 
-* Use serology to estimate the proportion of infections that are reported
 * "Leaky immunity" model
 
-\begin{aligned}
-s_t = (1-\gamma)s_{t-1} + a_t (C_t - C_{t-1}) z_t + \epsilon_t
-\end{aligned}
+$$I_w = (1-\gamma)I_{w-1} + a_w z_w \sum_{t = w-1}^w C_{t} + \epsilon_w,
+\quad \epsilon_w \sim \mathrm{N}(0, \sigma^2_\epsilon)
+$$
 
-* $s_t$ is population immunity
-* $\gamma$ is percentage that loses immunity between $(t-1)$ and $t$
-* $a_t$ is the inverse reporting ratio
-* $C_t$ is cumulative (deconvolved) cases at time $t$
-* $z_t$ is estimated fraction of cases that are first infections (from Literature)
-* $\epsilon_t$ is Gaussian noise.
+* $I_w$ is population immunity in week $w$
+* $\gamma$ is percentage that loses immunity between $(w-1)$ and $w$
+* $a_w$ is the inverse reporting ratio
+* $\sum_{t=w-1}^w C_{t}$ is total deconvolved cases in past week
+* $z_w$ is estimated infections of cases that are first infections (from Literature)
+
 
 
 
 ## Serology data
 
-* Two sources, noisy realizations of $s_t$
+* Two sources, noisy realizations of $I_w$
 * Lots of missingness
 
 ```{r serology}
@@ -217,17 +216,18 @@ serology |>
 ## State space model
 
 \begin{aligned}
-s_t = (1-\gamma)s_{t-1} + a_t (C_t - C_{t-1}) z_t + \epsilon_t
+s_{w,j} &= I_w + \eta_{w,j}, \quad \eta_{w,j} \sim \mathrm{N}(0, u_{w,j}\sigma_{j}), \quad j=1,2\\
+I_w &= (1-\gamma)I_{w-1} + a_w z_w \sum_{t = w-1}^w C_{t} + \epsilon_w
 \end{aligned}
 
-* Treat $s_t$ as latent
-* Estimate $\gamma$ and $a_t$ and noise variances using a state space model
+
+* Estimate $\gamma$, $a_w$, $I_w$ and noise variances using a state space model
 * Use Kalman filter / smoother, maximize the likelihood
 * Handles missingness automatically
-* Imposes smoothness on $a_t$ (like a spline)
-* Also gives variance estimates for $a_t$
+* Imposes smoothness on $a_w$ (like a spline)
+* Also gives variance estimates for $a_w$
 
-## Estimated seroprevalence and leaky model parameters
+## Estimated population immunity
 
 * $\gamma$ estimated to be 0.8% per week
 
@@ -250,7 +250,7 @@ serology |>
   geom_line(data = latent_sero, aes(y = sero_weekly), color = tertiary) +
   facet_wrap(~ geo_value) +
   theme_bw(base_size = 14) +
-  ylab("Seroprevalence") +
+  ylab("Estimated population\n immunity") +
   xlab("Date") +
   scale_color_manual(name = "", values = c(primary, secondary)) +
   scale_y_continuous(expand = expansion()) +
@@ -419,16 +419,14 @@ latent_infections |>
 ```
 
 
-## Callouts
+## Validation and usefulness
 
-::: {.callout-note}
-You can use these. See <https://quarto.org/docs/authoring/callouts.html>
-:::
-
-## Final slide {.smaller}
+* Compare to other public estimates
+* Small exercise estimating Infection-Hospitalization Ratio
+* 
 
 
-### Thanks:
+## Thanks:
 
 ```{r qr-codes}
 #| include: false
@@ -442,18 +440,10 @@ qrdat <- function(text, ecl = c("L", "M", "Q", "H")) {
   tib$z <- c(x)
   tib
 }
-qr1 <- qrdat("https://cmu-delphi.github.io/epiprocess/")
-qr2 <- qrdat("https://cmu-delphi.github.io/epipredict/")
+qr1 <- qrdat("https://cmu-delphi.github.io/cdcflu-latent-infections/")
 ggplot(qr1, aes(x, y, fill = z)) +
   geom_raster() +
-  ggtitle("{epiprocess}") +
-  coord_equal(expand = FALSE) +
-  scale_fill_manual(values = c("white", "black"), guide = "none") +
-  theme_void(base_size = 18) +
-  theme(plot.title = element_text(hjust = .5))
-ggplot(qr2, aes(x, y, fill = z)) +
-  geom_raster() +
-  labs(title = "{epipredict}") +
+  ggtitle("These slides.") +
   coord_equal(expand = FALSE) +
   scale_fill_manual(values = c("white", "black"), guide = "none") +
   theme_void(base_size = 18) +
@@ -461,7 +451,7 @@ ggplot(qr2, aes(x, y, fill = z)) +
 ```
 
 ::: flex
-::: w-50
+::: w-70
 - The whole [CMU Delphi Team](https://delphi.cmu.edu/about/team/) (across many institutions)
 - Optum/UnitedHealthcare, Change Healthcare.
 - Google, Facebook, Amazon Web Services.
@@ -470,10 +460,14 @@ ggplot(qr2, aes(x, y, fill = z)) +
 - Council of State and Territorial Epidemiologists
 :::
 
-::: w-50
+::: w-30
 
-![](gfx/qr-epiprocess.png){width="300px"}
-![](gfx/qr-epipredict.png){width="300px"}
+```{r}
+#| fig-width: 4
+#| fig-height: 4.5
+knitr::include_graphics("gfx/qr-codes-1.png")
+```
+
 
 :::
 
